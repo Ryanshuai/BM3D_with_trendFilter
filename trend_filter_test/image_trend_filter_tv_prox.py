@@ -12,7 +12,7 @@ sigma = 30
 noisy_im = add_gaussian_noise(im, sigma)
 im_h, im_w = noisy_im.shape
 
-lam = (sigma/255)* math.sqrt(math.log(im_h*im_w))
+lam = (sigma / 255) * math.sqrt(math.log(im_h * im_w))
 print(lam)
 res_im = ptv.tv1_2d(noisy_im, lam)
 

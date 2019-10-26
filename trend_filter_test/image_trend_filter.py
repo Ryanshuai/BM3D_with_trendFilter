@@ -24,7 +24,7 @@ def trend_filter(noisy_image, lambda_val):
     f = problem.solve()
     print(f)
     res = estimate_image.value
-    return res  # plt.imsave('toy_out.png',out)
+    return res
 
 
 if __name__ == '__main__':
@@ -35,11 +35,12 @@ if __name__ == '__main__':
     im = cv2.resize(im, (256, 256))
     noisy_im = add_gaussian_noise(im, sigma=30)
 
-    cv2.imshow('noisy_im', noisy_im)
+    # cv2.imshow('noisy_im', noisy_im)
 
     res = trend_filter(noisy_im, 50)
 
     res_im = res.astype(np.uint8)
-    cv2.imshow('res_im', res_im)
-    cv2.waitKey()
+    cv2.imwrite('res_im.png', res_im)
+    # cv2.imshow('res_im', res_im)
+    # cv2.waitKey()
 

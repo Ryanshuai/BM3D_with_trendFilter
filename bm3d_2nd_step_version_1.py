@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import prox_tv as ptv
 
 from utils import ind_initialize, get_kaiserWindow, sd_weighting
 from precompute_BM import precompute_BM
@@ -10,7 +11,7 @@ from build_3D_group import build_3D_group
 from wiener_filtering_hadamard import wiener_filtering_hadamard
 
 
-def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, useSD, tau_2D):
+def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, useSD, tau_2D, lam):
     height, width = img_noisy.shape[0], img_noisy.shape[1]
 
     row_ind = ind_initialize(height - kWien + 1, nWien, pWien)
@@ -27,9 +28,16 @@ def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMa
     if tau_2D == 'DCT':
         fre_noisy_patches = dct_2d_forward(noisy_patches)
         fre_basic_patches = dct_2d_forward(basic_patches)
-    else:  # 'BIOR'
+    elif tau_2D == 'BIOR':  # 'BIOR'
         fre_noisy_patches = bior_2d_forward(noisy_patches)
         fre_basic_patches = bior_2d_forward(basic_patches)
+    else:
+        fre_noisy_patches = np.zeros_like(noisy_patches)
+        for i, patch in enumerate(noisy_patches):
+            fre_noisy_patches[i] = ptv.tv1_2d(patch, lam)
+        fre_basic_patches = np.zeros_like(basic_patches)
+        for i, patch in enumerate(basic_patches):
+            fre_basic_patches[i] = ptv.tv1_2d(patch, lam)
 
     fre_noisy_patches = fre_noisy_patches.reshape((height - kWien + 1, height - kWien + 1, kWien, kWien))
     fre_basic_patches = fre_basic_patches.reshape((height - kWien + 1, height - kWien + 1, kWien, kWien))
@@ -53,8 +61,10 @@ def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMa
 
     if tau_2D == 'DCT':
         group_3D_table = dct_2d_reverse(group_3D_table)
-    else:  # 'BIOR'
+    elif tau_2D == 'BIOR':  # 'BIOR'
         group_3D_table = bior_2d_reverse(group_3D_table)
+    else:
+        pass
 
     # for i in range(1000):
     #     patch = group_3D_table[i]
