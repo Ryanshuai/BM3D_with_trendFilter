@@ -3,12 +3,11 @@ import cvxpy as cp
 
 
 def regularizer(beta):
+    sum_across_rows, sum_across_cols = 0, 0
     rows, cols = beta.shape
-    sum_across_rows = cp.tv(beta[:, 0])
-    for i in range(1, cols):
+    for i in range(cols):
         sum_across_rows = sum_across_rows + cp.tv(beta[:, i])
-    sum_across_cols = cp.tv(beta[0, :])
-    for i in range(1, rows):
+    for i in range(rows):
         sum_across_cols = sum_across_cols + cp.tv(beta[i, :])
     return sum_across_rows + sum_across_cols
 
@@ -33,12 +32,12 @@ if __name__ == '__main__':
     from utils import add_gaussian_noise
 
     im = cv2.imread('k0_im.png', cv2.IMREAD_GRAYSCALE)
-    im = cv2.resize(im, (249, 249))
+    im = cv2.resize(im, (256, 256))
     noisy_im = add_gaussian_noise(im, sigma=30)
 
     cv2.imshow('noisy_im', noisy_im)
 
-    res = trend_filter(noisy_im, 0)
+    res = trend_filter(noisy_im, 50)
 
     res_im = res.astype(np.uint8)
     cv2.imshow('res_im', res_im)
