@@ -10,19 +10,16 @@ from image_to_patches import image2patches
 from build_3D_group import build_3D_group
 
 
-def line_2norm(line):
-    return
-
-
-def filter_3d_1d(mat_3D):
+def filter_3d_1d(mat_3D, lam1):
     for i in range(mat_3D.shape[0]):
         for j in range(mat_3D.shape[1]):
             line = mat_3D[i, j]
-            line = line_2norm(line)
+            line = ptv.tv2_1d(line, lam1)
             mat_3D[i, j] = line
+    return mat_3D
 
 
-def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, useSD, tau_2D, lam):
+def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, useSD, tau_2D, lam0, lam1):
     height, width = img_noisy.shape[0], img_noisy.shape[1]
 
     row_ind = ind_initialize(height - kWien + 1, nWien, pWien)
@@ -45,10 +42,10 @@ def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMa
     else:
         fre_noisy_patches = np.zeros_like(noisy_patches)
         for i, patch in enumerate(noisy_patches):
-            fre_noisy_patches[i] = ptv.tv1_2d(patch, lam)
+            fre_noisy_patches[i] = ptv.tv1_2d(patch, lam0)
         fre_basic_patches = np.zeros_like(basic_patches)
         for i, patch in enumerate(basic_patches):
-            fre_basic_patches[i] = ptv.tv1_2d(patch, lam)
+            fre_basic_patches[i] = ptv.tv1_2d(patch, lam0)
 
     fre_noisy_patches = fre_noisy_patches.reshape((height - kWien + 1, height - kWien + 1, kWien, kWien))
     fre_basic_patches = fre_basic_patches.reshape((height - kWien + 1, height - kWien + 1, kWien, kWien))
@@ -58,7 +55,7 @@ def bm3d_2nd_step(sigma, img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMa
         for j_r in column_ind:
             nSx_r = threshold_count[i_r, j_r]
             group_3D_est = build_3D_group(fre_basic_patches, ri_rj_N__ni_nj[i_r, j_r], nSx_r)
-            group_3D = filter_3d_1d(group_3D_est)
+            group_3D = filter_3d_1d(group_3D_est, lam1)
             group_3D = group_3D.transpose((2, 0, 1))
 
             group_3D_table[acc_pointer:acc_pointer + nSx_r] = group_3D

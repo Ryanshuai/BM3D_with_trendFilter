@@ -2,8 +2,9 @@ from utils import add_gaussian_noise, symetrize
 from psnr import compute_psnr
 from bm3d_1st_step import bm3d_1st_step
 from bm3d_2nd_step import bm3d_2nd_step
-from bm3d_2nd_step_version_2 import bm3d_2nd_step as bm3d_2nd_step_tf
-save_dir = 'tf_res_version_2'
+from bm3d_2nd_step_version_3 import bm3d_2nd_step as bm3d_2nd_step_tf
+
+save_dir = 'tf_res_version_4'
 
 
 def run_bm3d(noisy_im, sigma,
@@ -25,8 +26,8 @@ def run_bm3d(noisy_im, sigma,
 
 
 def run_bm3d_tf(noisy_im, sigma,
-             n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
-             n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lam):
+                n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
+                n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lam, lam1):
     k_H = 8 if (tau_2D_H == 'BIOR' or sigma < 40.) else 12
     k_W = 8 if (tau_2D_W == 'BIOR' or sigma < 40.) else 12
 
@@ -36,7 +37,8 @@ def run_bm3d_tf(noisy_im, sigma,
 
     img_basic_p = symetrize(img_basic, n_W)
     noisy_im_p = symetrize(noisy_im, n_W)
-    img_denoised = bm3d_2nd_step_tf(sigma, noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lam)
+    img_denoised = bm3d_2nd_step_tf(sigma, noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W,
+                                    lam, lam1)
     img_denoised = img_denoised[n_W: -n_W, n_W: -n_W]
 
     return img_basic, img_denoised
@@ -61,7 +63,7 @@ if __name__ == '__main__':
 
     n_W = 16
     k_W = 8
-    N_W = 32
+    N_W = 8
     p_W = 3
     tauMatch_W = 400 if sigma < 35 else 3500  # ! threshold determinates similarity between patches
     useSD_W = True
@@ -97,18 +99,22 @@ if __name__ == '__main__':
     # <\ hyper parameter> -----------------------------------------------------------------------------
 
     # for lam in [0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50]:
-    for lam in [1, 2, 3, 5, 10, 20, 30, 50]:
-        print('lam: ', lam)
-        im1, im2 = run_bm3d_tf(noisy_im, sigma,
-                            n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
-                            n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lam)
+    for lam in [0.1]:
+        for lam1 in [0.001, 0.002, 0.003, 0.005]:
+        # for lam1 in [0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5]:
+        # for lam1 in [1, 2, 3, 5, 10, 20, 30, 50]:
+            print('lam0: ', lam, 'lam1: ', lam1)
+            im1, im2 = run_bm3d_tf(noisy_im, sigma,
+                                   n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
+                                   n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lam, lam1)
 
-        psnr_2nd_tf = compute_psnr(im, im2)
+            psnr_2nd_tf = compute_psnr(im, im2)
 
-        im1 = np.clip(im1, 0, 255)
-        im2 = np.clip(im2, 0, 255)
-        im1 = im1.astype(np.uint8)
-        im2 = im2.astype(np.uint8)
+            im1 = np.clip(im1, 0, 255)
+            im2 = np.clip(im2, 0, 255)
+            im1 = im1.astype(np.uint8)
+            im2 = im2.astype(np.uint8)
 
-        save_name = im_name[:-4] + '_s' + str(sigma) + '_2_lam' + str(lam) + '_P' + str(round(psnr_2nd_tf, 3)) + '.png'
-        cv2.imwrite(os.path.join(save_dir, save_name), im2)
+            save_name = im_name[:-4] + '_s' + str(sigma) + '_2_lam0_' + str(lam) + '_lam1_' + str(
+                lam1) + '_P' + str(round(psnr_2nd_tf, 3)) + '.png'
+            cv2.imwrite(os.path.join(save_dir, save_name), im2)
