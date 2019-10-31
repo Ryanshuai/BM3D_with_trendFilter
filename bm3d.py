@@ -1,13 +1,14 @@
+import os
+import cv2
 from utils import add_gaussian_noise, symetrize
 from psnr import compute_psnr
 from bm3d_1st_step import bm3d_1st_step
-from bm3d_2nd_step import bm3d_2nd_step
-from bm3d_2nd_step_version_3 import bm3d_2nd_step as bm3d_2nd_step_tf
+from bm3d_2nd_step_trendfilter3D import bm3d_2nd_step
 
 save_dir = 'tf_res_version_4'
 
 
-def run_bm3d(noisy_im, sigma,
+def run_bm3d_tf(noisy_im, sigma,
              n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
              n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W):
     k_H = 8 if (tau_2D_H == 'BIOR' or sigma < 40.) else 12
@@ -19,30 +20,33 @@ def run_bm3d(noisy_im, sigma,
 
     img_basic_p = symetrize(img_basic, n_W)
     noisy_im_p = symetrize(noisy_im, n_W)
-    img_denoised = bm3d_2nd_step(sigma, noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W)
+    img_denoised = bm3d_2nd_step(noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W)
     img_denoised = img_denoised[n_W: -n_W, n_W: -n_W]
 
     return img_basic, img_denoised
 
 
-def run_bm3d_tf(noisy_im, sigma,
-                n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
-                n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lam, lam1):
-    k_H = 8 if (tau_2D_H == 'BIOR' or sigma < 40.) else 12
-    k_W = 8 if (tau_2D_W == 'BIOR' or sigma < 40.) else 12
+def hyper_run_bm3d_tf(im_dir, im_name, sigma,
+             n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
+             n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, lamb):
+    im_path = os.path.join(im_dir, im_name)
+    im = cv2.imread(im_path, cv2.IMREAD_GRAYSCALE)
+    noisy_im = add_gaussian_noise(im, sigma, seed=1)
 
     noisy_im_p = symetrize(noisy_im, n_H)
-    img_basic = bm3d_1st_step(sigma, noisy_im_p, n_H, k_H, N_H, p_H, lambda3D_H, tauMatch_H, useSD_H, tau_2D_H)
-    img_basic = img_basic[n_H: -n_H, n_H: -n_H]
+    im_basic = bm3d_1st_step(sigma, noisy_im_p, n_H, k_H, N_H, p_H, lambda3D_H, tauMatch_H, useSD_H, tau_2D_H)
+    im_basic = im_basic[n_H: -n_H, n_H: -n_H]
 
-    img_basic_p = symetrize(img_basic, n_W)
+    im_basic_p = symetrize(im_basic, n_W)
     noisy_im_p = symetrize(noisy_im, n_W)
-    img_denoised = bm3d_2nd_step_tf(sigma, noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W,
-                                    lam, lam1)
-    img_denoised = img_denoised[n_W: -n_W, n_W: -n_W]
+    im_denoised = bm3d_2nd_step(noisy_im_p, im_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, lamb)
+    im_denoised = im_denoised[n_W: -n_W, n_W: -n_W]
 
-    return img_basic, img_denoised
+    im_basic = (np.clip(im_basic, 0, 255)).astype(np.uint8)
+    im_denoised = (np.clip(im_denoised, 0, 255)).astype(np.uint8)
 
+    psnr = compute_psnr(im, im_denoised)
+    return im_basic, im_denoised, psnr
 
 if __name__ == '__main__':
     import os
