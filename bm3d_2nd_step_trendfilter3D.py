@@ -8,18 +8,10 @@ from bior_2d import bior_2d_forward, bior_2d_reverse
 from dct_2d import dct_2d_forward, dct_2d_reverse
 from image_to_patches import image2patches
 from build_3D_group import build_3D_group
+from trendFilter3D import trendFilter3D
 
 
-def trend_filter_3D(mat_3D, lam1):
-    for i in range(mat_3D.shape[0]):
-        for j in range(mat_3D.shape[1]):
-            line = mat_3D[i, j]
-            line = ptv.tv2_1d(line, lam1)
-            mat_3D[i, j] = line
-    return mat_3D
-
-
-def bm3d_2nd_step(img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, useSD, lamb):
+def bm3d_2nd_step_trendfilter3D(img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, useSD, lamb):
     height, width = img_noisy.shape[0], img_noisy.shape[1]
 
     row_ind = ind_initialize(height - kWien + 1, nWien, pWien)
@@ -41,25 +33,16 @@ def bm3d_2nd_step(img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, us
     for i_r in row_ind:
         for j_r in column_ind:
             nSx_r = threshold_count[i_r, j_r]
-            group_3D_est = build_3D_group(fre_basic_patches, ri_rj_N__ni_nj[i_r, j_r], nSx_r)
-            group_3D = trend_filter_3D(group_3D_est, lamb)
+            group_3D_est = build_3D_group(noisy_patches, ri_rj_N__ni_nj[i_r, j_r], nSx_r)
+            group_3D = trendFilter3D(group_3D_est, lamb)
             group_3D = group_3D.transpose((2, 0, 1))
 
             group_3D_table[acc_pointer:acc_pointer + nSx_r] = group_3D
             acc_pointer += nSx_r
 
-            if useSD:
-                weight = sd_weighting(group_3D)
-
+            # if useSD:
+            weight = sd_weighting(group_3D)
             weight_table[i_r, j_r] = weight
-
-
-    # for i in range(1000):
-    #     patch = group_3D_table[i]
-    #     print(i, '----------------------------')
-    #     print(patch)
-    #     cv2.imshow('', patch.astype(np.uint8))
-    #     cv2.waitKey()
 
     group_3D_table *= kaiserWindow
 
@@ -90,6 +73,29 @@ def bm3d_2nd_step(img_noisy, img_basic, nWien, kWien, NWien, pWien, tauMatch, us
 if __name__ == '__main__':
     from psnr import compute_psnr
     from utils import add_gaussian_noise, symetrize
+    from bm3d_1st_step import bm3d_1st_step
+
+    # <hyper parameter> -------------------------------------------------------------------------------
+    sigma = 20
+
+    nHard = 16
+    kHard = 8
+    NHard = 16
+    pHard = 3
+    lambdaHard3D = 2.7  # ! Threshold for Hard Thresholding
+    tauMatchHard = 2500 if sigma < 35 else 5000  # ! threshold determinates similarity between patches
+    useSD_h = False
+    tau_2D_hard = 'BIOR'
+    # <\ hyper parameter> -----------------------------------------------------------------------------
+
+    img = cv2.imread('test_data/image/Cameraman.png', cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (128, 128))
+    img_noisy = add_gaussian_noise(img, sigma, seed=0)
+
+    img_noisy_p = symetrize(img_noisy, nHard)
+    img_basic = bm3d_1st_step(sigma, img_noisy_p, nHard, kHard, NHard, pHard, lambdaHard3D, tauMatchHard, useSD_h,
+                              tau_2D_hard)
+    img_basic = img_basic[nHard: -nHard, nHard: -nHard]
 
     # <hyper parameter> -------------------------------------------------------------------------------
     sigma = 20
@@ -100,19 +106,17 @@ if __name__ == '__main__':
     pWien = 3
     tauMatchWien = 400 if sigma < 35 else 3500  # ! threshold determinates similarity between patches
     useSD_w = True
-    tau_2D_wien = 'DCT'
+    lamb = 1
     # <\ hyper parameter> -----------------------------------------------------------------------------
-
-    img = cv2.imread('Cameraman256.png', cv2.IMREAD_GRAYSCALE)
-    img_noisy = cv2.imread('image_noise.png', cv2.IMREAD_GRAYSCALE)
-    img_basic = cv2.imread('y_basic.png', cv2.IMREAD_GRAYSCALE)
 
     img_basic_p = symetrize(img_basic, nWien)
     img_noisy_p = symetrize(img_noisy, nWien)
-    img_denoised = bm3d_2nd_step(img_noisy_p, img_basic_p, nWien, kWien, NWien, pWien, tauMatchWien, useSD_w,
-                                 tau_2D_wien)
+    img_denoised = bm3d_2nd_step_trendfilter3D(img_noisy_p, img_basic_p, nWien, kWien, NWien, pWien, tauMatchWien,
+                                               useSD_w, lamb)
     img_denoised = img_denoised[nWien: -nWien, nWien: -nWien]
 
     psnr_2st = compute_psnr(img, img_denoised)
+    img_denoised = (np.clip(img_denoised, 0, 255)).astype(np.uint8)
+
     print('img and img_denoised PSNR: ', psnr_2st)
-    # cv2.imwrite('y_final.png', img_denoised.astype(np.uint8))
+    cv2.imwrite('y_final.png', img_denoised)

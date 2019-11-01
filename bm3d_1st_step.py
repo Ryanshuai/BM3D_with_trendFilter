@@ -100,9 +100,8 @@ if __name__ == '__main__':
     # <\ hyper parameter> -----------------------------------------------------------------------------
 
     img = cv2.imread('Cameraman256.png', cv2.IMREAD_GRAYSCALE)
-    # img = cv2.resize(img, (128, 128))
-    # img_noisy = add_gaussian_noise(img, sigma)
-    img_noisy = cv2.imread('matlab_official_compare/noisy_image.png', cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (128, 128))
+    img_noisy = add_gaussian_noise(img, sigma, seed=0)
 
     img_noisy_p = symetrize(img_noisy, nHard)
     img_basic = bm3d_1st_step(sigma, img_noisy_p, nHard, kHard, NHard, pHard, lambdaHard3D, tauMatchHard, useSD_h,
