@@ -97,7 +97,8 @@ if __name__ == '__main__':
     tau_2D_hard = 'BIOR'
     # <\ hyper parameter> -----------------------------------------------------------------------------
     read_dir = 'test_data/image'
-    for sigma in [2, 5, 10, 20, 30, 40, 60, 80, 100]:
+    # for sigma in [2, 5, 10, 20, 30, 40, 60, 80, 100]:
+    for sigma in [30, 40, 60, 80, 100]:
         tauMatchHard = 2500 if sigma < 35 else 5000  # ! threshold determinates similarity between patches
         for image_name in os.listdir(read_dir):
             image_path = os.path.join(read_dir, image_name)
@@ -112,3 +113,4 @@ if __name__ == '__main__':
             im_basic = (np.clip(im_basic, 0, 255)).astype(np.uint8)
             cv2.imwrite('noisy_image_and_1st_res/' + image_name[:-4] + '_sigma' + str(sigma) + '.png', im_noisy)
             cv2.imwrite('noisy_image_and_1st_res/' + image_name[:-4] + '_sigma' + str(sigma) + '_1st.png', im_basic)
+            print(image_name[:-4] + '_sigma' + str(sigma))

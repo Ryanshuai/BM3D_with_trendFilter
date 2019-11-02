@@ -30,8 +30,11 @@ def run_bm3d_tf(noisy_im, sigma,
 def hyper_run_bm3d_tf(im_dir, im_name, sigma,
                       nH, kH, NH, pH, tauMatchH, useSDH, tau_2DH, lambda3DH,
                       nW, kW, NW, pW, tauMatchW, useSDW, lamb):
-    im_noisy = cv2.imread('noisy_image_and_1st_res/' + im_name[:-4] + '_sigma' + str(sigma) + '.png')
-    im_basic = cv2.imread('noisy_image_and_1st_res/' + im_name[:-4] + '_sigma' + str(sigma) + '_1st.png')
+    im = cv2.imread('test_data/image/' + im_name, cv2.IMREAD_GRAYSCALE)
+    im_noisy = cv2.imread('noisy_image_and_1st_res/' + im_name[:-4] + '_sigma' + str(sigma) + '.png',
+                          cv2.IMREAD_GRAYSCALE)
+    im_basic = cv2.imread('noisy_image_and_1st_res/' + im_name[:-4] + '_sigma' + str(sigma) + '_1st.png',
+                          cv2.IMREAD_GRAYSCALE)
 
     im_noisy_p = symetrize(im_noisy, nW)
     im_basic_p = symetrize(im_basic, nW)

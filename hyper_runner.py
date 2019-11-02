@@ -60,16 +60,16 @@ if __name__ == '__main__':
         'im_name': ['Cameraman.png'],
         # 'sigma': [2, 5, 10, 20, 30, 40, 60, 80, 100],
         'sigma': [20],
-        'nW': [32],
-        'kW': [16],
-        'NW': [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        'nW': [16],
+        'kW': [5, 6, 7],
+        # 'NW': [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        'NW': [10],
 
-        'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:,
-                                                               np.newaxis]).flatten(),
+        # 'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:, np.newaxis]).flatten(),
         # 'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:, np.newaxis]).flatten(),
         # 'lamb': np.power(10., np.arange(0, 4)),
         # 'lamb': np.array([6, 6.5, 7, 7.5, 8, 8.5, 9]),
-        # 'lamb': np.arange(8.0, 8.2, 0.02),
+        'lamb': np.arange(6, 10),
     }
 
     hyper = Hyper(fix_hyper, float_hyper)
