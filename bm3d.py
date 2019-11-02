@@ -1,16 +1,17 @@
 import os
 import cv2
+import numpy as np
 from utils import add_gaussian_noise, symetrize
 from psnr import compute_psnr
 from bm3d_1st_step import bm3d_1st_step
-from bm3d_2nd_step_trendfilter3D import bm3d_2nd_step
+from bm3d_2nd_step_trendfilter3D import bm3d_2nd_step_trendfilter3D
 
 save_dir = 'tf_res_version_4'
 
 
 def run_bm3d_tf(noisy_im, sigma,
-             n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
-             n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W):
+                n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
+                n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W, lamb):
     k_H = 8 if (tau_2D_H == 'BIOR' or sigma < 40.) else 12
     k_W = 8 if (tau_2D_W == 'BIOR' or sigma < 40.) else 12
 
@@ -20,27 +21,22 @@ def run_bm3d_tf(noisy_im, sigma,
 
     img_basic_p = symetrize(img_basic, n_W)
     noisy_im_p = symetrize(noisy_im, n_W)
-    img_denoised = bm3d_2nd_step(noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W)
+    img_denoised = bm3d_2nd_step_trendfilter3D(noisy_im_p, img_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, lamb)
     img_denoised = img_denoised[n_W: -n_W, n_W: -n_W]
 
     return img_basic, img_denoised
 
 
 def hyper_run_bm3d_tf(im_dir, im_name, sigma,
-             n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
-             n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, lamb):
-    im_path = os.path.join(im_dir, im_name)
-    im = cv2.imread(im_path, cv2.IMREAD_GRAYSCALE)
-    noisy_im = add_gaussian_noise(im, sigma, seed=1)
+                      nH, kH, NH, pH, tauMatchH, useSDH, tau_2DH, lambda3DH,
+                      nW, kW, NW, pW, tauMatchW, useSDW, lamb):
+    im_noisy = cv2.imread('noisy_image_and_1st_res/' + im_name[:-4] + '_sigma' + str(sigma) + '.png')
+    im_basic = cv2.imread('noisy_image_and_1st_res/' + im_name[:-4] + '_sigma' + str(sigma) + '_1st.png')
 
-    noisy_im_p = symetrize(noisy_im, n_H)
-    im_basic = bm3d_1st_step(sigma, noisy_im_p, n_H, k_H, N_H, p_H, lambda3D_H, tauMatch_H, useSD_H, tau_2D_H)
-    im_basic = im_basic[n_H: -n_H, n_H: -n_H]
-
-    im_basic_p = symetrize(im_basic, n_W)
-    noisy_im_p = symetrize(noisy_im, n_W)
-    im_denoised = bm3d_2nd_step(noisy_im_p, im_basic_p, n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, lamb)
-    im_denoised = im_denoised[n_W: -n_W, n_W: -n_W]
+    im_noisy_p = symetrize(im_noisy, nW)
+    im_basic_p = symetrize(im_basic, nW)
+    im_denoised = bm3d_2nd_step_trendfilter3D(im_noisy_p, im_basic_p, nW, kW, NW, pW, tauMatchW, useSDW, lamb)
+    im_denoised = im_denoised[nW: -nW, nW: -nW]
 
     im_basic = (np.clip(im_basic, 0, 255)).astype(np.uint8)
     im_denoised = (np.clip(im_denoised, 0, 255)).astype(np.uint8)
@@ -48,10 +44,10 @@ def hyper_run_bm3d_tf(im_dir, im_name, sigma,
     psnr = compute_psnr(im, im_denoised)
     return im_basic, im_denoised, psnr
 
+
 if __name__ == '__main__':
     import os
     import cv2
-    import numpy as np
 
     sigma = 20
 
@@ -81,9 +77,9 @@ if __name__ == '__main__':
     im = cv2.imread(im_path, cv2.IMREAD_GRAYSCALE)
     noisy_im = add_gaussian_noise(im, sigma, seed=1)
 
-    im1, im2 = run_bm3d(noisy_im, sigma,
-                        n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
-                        n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W)
+    im1, im2 = run_bm3d_tf(noisy_im, sigma,
+                           n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,
+                           n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, tau_2D_W)
 
     psnr_1st = compute_psnr(im, im1)
     psnr_2nd = compute_psnr(im, im2)
@@ -105,8 +101,8 @@ if __name__ == '__main__':
     # for lam in [0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 1, 2, 3, 5, 10, 20, 30, 50]:
     for lam in [0.1]:
         for lam1 in [0.001, 0.002, 0.003, 0.005]:
-        # for lam1 in [0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5]:
-        # for lam1 in [1, 2, 3, 5, 10, 20, 30, 50]:
+            # for lam1 in [0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5]:
+            # for lam1 in [1, 2, 3, 5, 10, 20, 30, 50]:
             print('lam0: ', lam, 'lam1: ', lam1)
             im1, im2 = run_bm3d_tf(noisy_im, sigma,
                                    n_H, k_H, N_H, p_H, tauMatch_H, useSD_H, tau_2D_H, lambda3D_H,

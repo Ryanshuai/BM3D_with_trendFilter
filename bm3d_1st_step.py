@@ -79,33 +79,36 @@ def bm3d_1st_step(sigma, img_noisy, nHard, kHard, NHard, pHard, lambdaHard3D, ta
                 numerator[ni:ni + kHard, nj:nj + kHard] += patch * weight
                 denominator[ni:ni + kHard, nj:nj + kHard] += kaiserWindow * weight
 
-    img_basic= numerator / denominator
+    img_basic = numerator / denominator
     return img_basic
 
 
 if __name__ == '__main__':
+    import os
     from utils import add_gaussian_noise, symetrize
 
     # <hyper parameter> -------------------------------------------------------------------------------
-    sigma = 20
-
     nHard = 16
     kHard = 8
     NHard = 16
     pHard = 3
     lambdaHard3D = 2.7  # ! Threshold for Hard Thresholding
-    tauMatchHard = 2500 if sigma < 35 else 5000  # ! threshold determinates similarity between patches
     useSD_h = False
     tau_2D_hard = 'BIOR'
     # <\ hyper parameter> -----------------------------------------------------------------------------
+    read_dir = 'test_data/image'
+    for sigma in [2, 5, 10, 20, 30, 40, 60, 80, 100]:
+        tauMatchHard = 2500 if sigma < 35 else 5000  # ! threshold determinates similarity between patches
+        for image_name in os.listdir(read_dir):
+            image_path = os.path.join(read_dir, image_name)
+            im = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            im_noisy = add_gaussian_noise(im, sigma, seed=0)
 
-    img = cv2.imread('Cameraman256.png', cv2.IMREAD_GRAYSCALE)
-    img = cv2.resize(img, (128, 128))
-    img_noisy = add_gaussian_noise(img, sigma, seed=0)
+            im_noisy_p = symetrize(im_noisy, nHard)
+            im_basic = bm3d_1st_step(sigma, im_noisy_p, nHard, kHard, NHard, pHard, lambdaHard3D, tauMatchHard, useSD_h,
+                                     tau_2D_hard)
+            im_basic = im_basic[nHard: -nHard, nHard: -nHard]
 
-    img_noisy_p = symetrize(img_noisy, nHard)
-    img_basic = bm3d_1st_step(sigma, img_noisy_p, nHard, kHard, NHard, pHard, lambdaHard3D, tauMatchHard, useSD_h,
-                              tau_2D_hard)
-    img_basic = img_basic[nHard: -nHard, nHard: -nHard]
-
-    # cv2.imwrite('y_basic.png', img_basic.astype(np.uint8))
+            im_basic = (np.clip(im_basic, 0, 255)).astype(np.uint8)
+            cv2.imwrite('noisy_image_and_1st_res/' + image_name[:-4] + '_sigma' + str(sigma) + '.png', im_noisy)
+            cv2.imwrite('noisy_image_and_1st_res/' + image_name[:-4] + '_sigma' + str(sigma) + '_1st.png', im_basic)

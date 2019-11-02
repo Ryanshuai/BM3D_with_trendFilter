@@ -25,9 +25,11 @@ class Hyper:
                 save_im_name += k + str(v) + '_'
 
         _, im_denoised, psnr = hyper_run_bm3d_tf(**fix_hyper, **product_parameter)
-        save_im_name += 'psnr' + str(psnr)
+        save_im_name += 'psnr' + str(psnr)[:8] + '.png'
         save_dir = 'all_3d_tf_res'
-        cv2.imwrite(os.path.join(save_dir, save_im_name), im_denoised)
+        im_path = os.path.join(save_dir, save_im_name)
+        cv2.imwrite(im_path, im_denoised)
+        print(im_path, '\tsaved')
 
 
 if __name__ == '__main__':
@@ -36,29 +38,38 @@ if __name__ == '__main__':
     # n_W, k_W, N_W, p_W, tauMatch_W, useSD_W, lamb
 
     fix_hyper = {
-        'im_dir': 'test_data/image',
-        'n_H': 16,
-        'k_H': 8,
-        'N_H': 16,
-        'p_H': 3,
-        'tauMatch_H': 2500,
-        'useSD_H': False,
-        'tau_2D_H': 'BIOR',
-        'lambda3D_H': 2.7,
+        'im_dir': 'noisy_image_and_1st_res',
+        'nH': 16,
+        'kH': 8,
+        'NH': 16,
+        'pH': 3,
+        'tauMatchH': 2500,
+        'useSDH': False,
+        'tau_2DH': 'BIOR',
+        'lambda3DH': 2.7,
 
-        'n_W': 16,
-        'k_W': 8,
-        'N_W': 8,
-        'p_W': 3,
-        'tauMatch_W': 400,
-        'useSD_W': True,
+        # 'nW': 16,
+        # 'kW': 8,
+        # 'NW': 8,
+        'pW': 3,
+        'tauMatchW': 400,
+        'useSDW': True,
     }
 
     float_hyper = {
         'im_name': ['Cameraman.png'],
-        'sigma': [2, 5, 10, 20, 30, 40, 60, 80, 100],
+        # 'sigma': [2, 5, 10, 20, 30, 40, 60, 80, 100],
+        'sigma': [20],
+        'nW': [32],
+        'kW': [16],
+        'NW': [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
 
-        'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(-9, 0))[:, np.newaxis]).flatten()
+        'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:,
+                                                               np.newaxis]).flatten(),
+        # 'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:, np.newaxis]).flatten(),
+        # 'lamb': np.power(10., np.arange(0, 4)),
+        # 'lamb': np.array([6, 6.5, 7, 7.5, 8, 8.5, 9]),
+        # 'lamb': np.arange(8.0, 8.2, 0.02),
     }
 
     hyper = Hyper(fix_hyper, float_hyper)
