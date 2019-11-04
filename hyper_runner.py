@@ -58,18 +58,18 @@ if __name__ == '__main__':
 
     float_hyper = {
         'im_name': ['Cameraman.png'],
+        # 'im_name': ['Baboon.png'],
         # 'sigma': [2, 5, 10, 20, 30, 40, 60, 80, 100],
         'sigma': [20],
-        'nW': [16],
-        'kW': [5, 6, 7],
-        # 'NW': [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-        'NW': [10],
+        'nW': [0],
+        'kW': [4, 5, 6, 7, 8, 9, 10, 11, 12],
+        'NW': [8, 10, 12, 16, 20],
 
         # 'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:, np.newaxis]).flatten(),
         # 'lamb': (np.array([1, 2, 3, 4, 6, 8])[np.newaxis, :] * np.power(10., np.arange(0, 2))[:, np.newaxis]).flatten(),
         # 'lamb': np.power(10., np.arange(0, 4)),
         # 'lamb': np.array([6, 6.5, 7, 7.5, 8, 8.5, 9]),
-        'lamb': np.arange(6, 10),
+        'lamb': np.arange(4, 12),
     }
 
     hyper = Hyper(fix_hyper, float_hyper)

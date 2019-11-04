@@ -51,9 +51,6 @@ def bm3d_2nd_step_trendfilter3D(img_noisy, img_basic, nWien, kWien, NWien, pWien
     acc_pointer = 0
     for i_r in row_ind:
         for j_r in column_ind:
-            if i_r == 264 and j_r == 264:
-                print()
-
             nSx_r = threshold_count[i_r, j_r]
             N_ni_nj = ri_rj_N__ni_nj[i_r, j_r]
             group_3D = group_3D_table[acc_pointer:acc_pointer + nSx_r]
